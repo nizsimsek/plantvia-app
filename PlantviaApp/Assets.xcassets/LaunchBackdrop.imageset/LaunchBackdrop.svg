@@ -1,0 +1,42 @@
+<svg width="430" height="932" viewBox="0 0 430 932" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="430" height="932" fill="url(#bg)"/>
+  <rect width="430" height="932" fill="url(#softWash)" opacity="0.82"/>
+  <circle cx="36" cy="86" r="190" fill="url(#mintGlow)" opacity="0.78"/>
+  <circle cx="400" cy="798" r="224" fill="url(#skyGlow)" opacity="0.58"/>
+  <circle cx="390" cy="242" r="150" fill="url(#limeGlow)" opacity="0.42"/>
+  <path d="M-76 724C51 653 150 658 255 718C336 765 416 767 506 709" stroke="#B5F5CA" stroke-width="96" stroke-linecap="round" opacity="0.11"/>
+  <path d="M-64 206C72 128 160 136 258 184C338 224 408 218 496 158" stroke="#FFFFFF" stroke-width="74" stroke-linecap="round" opacity="0.17"/>
+  <path d="M-24 830C97 782 196 806 292 850C374 888 433 880 486 846" stroke="#6DD9F2" stroke-width="54" stroke-linecap="round" opacity="0.10"/>
+  <rect x="0" y="0" width="430" height="932" fill="url(#vignette)" opacity="0.24"/>
+  <defs>
+    <linearGradient id="bg" x1="52" y1="0" x2="410" y2="910" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6FFF8"/>
+      <stop offset="0.48" stop-color="#FAFFFC"/>
+      <stop offset="1" stop-color="#F1FBFF"/>
+    </linearGradient>
+    <linearGradient id="softWash" x1="15" y1="72" x2="427" y2="808" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E7FFF0"/>
+      <stop offset="0.42" stop-color="#FFFFFF" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#EAF8FF"/>
+    </linearGradient>
+    <radialGradient id="mintGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(42 58) rotate(90) scale(168)">
+      <stop stop-color="#6DF1A0"/>
+      <stop offset="0.62" stop-color="#B8F5C9" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#B8F5C9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="skyGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(388 820) rotate(90) scale(190)">
+      <stop stop-color="#79D8F4"/>
+      <stop offset="0.6" stop-color="#B8E8F8" stop-opacity="0.36"/>
+      <stop offset="1" stop-color="#B8E8F8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="limeGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(390 242) rotate(90) scale(150)">
+      <stop stop-color="#B9FF6A"/>
+      <stop offset="0.62" stop-color="#CFFF91" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#CFFF91" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="vignette" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(215 466) rotate(90) scale(610 350)">
+      <stop offset="0.58" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#083F2F"/>
+    </radialGradient>
+  </defs>
+</svg>
