@@ -22,7 +22,7 @@ struct PlantRowView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
-                Text(L10n.format("Next watering: %@", plant.nextWateringDate.formatted(date: .abbreviated, time: .shortened)))
+                Text(L10n.format("Next watering: %@", plant.nextWateringDate.appFormatted()))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

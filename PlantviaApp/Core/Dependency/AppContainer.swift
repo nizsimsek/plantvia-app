@@ -17,7 +17,8 @@ final class AppContainer: ObservableObject {
     let adsService: AdsServiceProtocol
     let notificationService: NotificationServiceProtocol
     let appConfigService: AppConfigServiceProtocol
-    
+    let analyticsService: AnalyticsServiceProtocol
+
     init(
         authService: AuthServiceProtocol? = nil,
         plantService: PlantServiceProtocol? = nil,
@@ -25,7 +26,8 @@ final class AppContainer: ObservableObject {
         revenueCatService: RevenueCatServiceProtocol? = nil,
         adsService: AdsServiceProtocol? = nil,
         notificationService: NotificationServiceProtocol? = nil,
-        appConfigService: AppConfigServiceProtocol? = nil
+        appConfigService: AppConfigServiceProtocol? = nil,
+        analyticsService: AnalyticsServiceProtocol? = nil
     ) {
         self.authService = authService ?? AuthService()
         self.plantService = plantService ?? PlantService()
@@ -34,5 +36,8 @@ final class AppContainer: ObservableObject {
         self.adsService = adsService ?? AdsService()
         self.notificationService = notificationService ?? NotificationService()
         self.appConfigService = appConfigService ?? AppConfigService()
+
+        let apiKey = Bundle.main.infoDictionary?["POSTHOG_API_KEY"] as? String ?? ""
+        self.analyticsService = analyticsService ?? (apiKey.isEmpty ? NoOpAnalyticsService() : PostHogAnalyticsService(apiKey: apiKey))
     }
 }

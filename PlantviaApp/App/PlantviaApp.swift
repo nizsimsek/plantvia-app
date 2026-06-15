@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if canImport(Sentry)
+import Sentry
+#endif
 
 @main
 struct PlantviaApp: App {
@@ -28,6 +31,16 @@ struct PlantviaApp: App {
         let container = AppContainer()
         container.revenueCatService.configure()
         container.adsService.configureMobileAds()
+        container.analyticsService.configure()
+#if canImport(Sentry)
+        if let dsn = AppEnvironment.shared.sentryDsn, !dsn.isEmpty {
+            SentrySDK.start { options in
+                options.dsn = dsn
+                options.environment = "production"
+                options.tracesSampleRate = 0.1
+            }
+        }
+#endif
         _container = StateObject(wrappedValue: container)
         _onboardingStore = StateObject(wrappedValue: OnboardingStore())
         _authStore = StateObject(wrappedValue: AuthStore(authService: container.authService))
@@ -53,6 +66,11 @@ struct PlantviaApp: App {
                 .id(appLanguage)
                 .task(id: authStore.activeUser?.id) {
                     await subscriptionStore.identifyRevenueCatUser(authStore.activeUser)
+                    if let user = authStore.activeUser {
+                        container.analyticsService.identify(userId: String(user.id), plan: user.plan ?? "free")
+                    } else {
+                        container.analyticsService.reset()
+                    }
                 }
                 .task(id: authStore.authToken) {
                     await notificationStore.syncRemoteNotificationRegistrationIfPossible(authToken: authStore.authToken)

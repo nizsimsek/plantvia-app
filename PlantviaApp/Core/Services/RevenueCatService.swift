@@ -27,7 +27,9 @@ struct RevenueCatPlanOption: Equatable, Identifiable {
     let packageId: String
     let localizedPrice: String
     let localizedIntroductoryPrice: String?
-    
+    let hasTrial: Bool
+    let trialDays: Int?
+
     var id: String { productId }
 }
 
@@ -129,12 +131,17 @@ final class RevenueCatService: RevenueCatServiceProtocol {
         
         return PremiumPlan.allCases.compactMap { plan in
             guard let package = package(for: plan, in: offering) else { return nil }
+            let discount = package.storeProduct.introductoryDiscount
+            let hasTrial = discount?.paymentMode == .freeTrial
+            let trialDays: Int? = hasTrial ? Self.trialDays(from: discount) : nil
             return RevenueCatPlanOption(
                 plan: plan,
                 productId: package.storeProduct.productIdentifier,
                 packageId: package.identifier,
                 localizedPrice: package.localizedPriceString,
-                localizedIntroductoryPrice: package.localizedIntroductoryPriceString
+                localizedIntroductoryPrice: package.localizedIntroductoryPriceString,
+                hasTrial: hasTrial,
+                trialDays: trialDays
             )
         }
 #else
@@ -209,6 +216,18 @@ private extension RevenueCatService {
         }
     }
     
+    static func trialDays(from discount: StoreProductDiscount?) -> Int? {
+        guard let discount else { return nil }
+        let period = discount.subscriptionPeriod
+        switch period.unit {
+            case .day:   return period.value
+            case .week:  return period.value * 7
+            case .month: return period.value * 30
+            case .year:  return period.value * 365
+            @unknown default: return nil
+        }
+    }
+
     static func state(from customerInfo: CustomerInfo, entitlementId: String) -> RevenueCatCustomerState {
         RevenueCatCustomerState(
             isPremiumActive: customerInfo.entitlements[entitlementId]?.isActive == true,

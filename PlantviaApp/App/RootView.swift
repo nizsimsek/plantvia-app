@@ -12,7 +12,7 @@ struct RootView: View {
     @EnvironmentObject private var authStore: AuthStore
     @EnvironmentObject private var connectivityStore: ConnectivityStore
     @EnvironmentObject private var appUpdateStore: AppUpdateStore
-    
+
     var body: some View {
         Group {
             if let requiredUpdate = appUpdateStore.requiredUpdate {
@@ -40,5 +40,21 @@ struct RootView: View {
         .animation(.spring(response: 0.45, dampingFraction: 0.86), value: onboardingStore.completed)
         .animation(.spring(response: 0.45, dampingFraction: 0.86), value: authStore.activeUser?.id)
         .animation(.spring(response: 0.45, dampingFraction: 0.86), value: appUpdateStore.requiredUpdate?.minimumSupportedVersion)
+        .sheet(isPresented: Binding(
+            get: { authStore.pendingResetToken != nil },
+            set: { if !$0 { authStore.pendingResetToken = nil } }
+        )) {
+            if let token = authStore.pendingResetToken {
+                ResetPasswordView(token: token)
+            }
+        }
+        .onOpenURL { url in
+            guard url.scheme == "plantvia",
+                  url.host == "reset-password",
+                  let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                  let token = components.queryItems?.first(where: { $0.name == "token" })?.value
+            else { return }
+            authStore.pendingResetToken = token
+        }
     }
 }

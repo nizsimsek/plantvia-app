@@ -67,6 +67,7 @@ struct RegisterView: View {
                     }
                     .padding()
                 }
+                .scrollDismissesKeyboard(.immediately)
             }
             .navigationTitle("Register".localized)
         }

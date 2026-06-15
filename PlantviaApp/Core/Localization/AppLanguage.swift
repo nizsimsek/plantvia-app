@@ -23,6 +23,13 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     static var current: AppLanguage {
         AppLanguage(rawValue: UserDefaults.standard.string(forKey: "appLanguage") ?? AppLanguage.english.rawValue) ?? .english
     }
+
+    var locale: Locale {
+        switch self {
+        case .english: return Locale(identifier: "en_US")
+        case .turkish: return Locale(identifier: "tr_TR")
+        }
+    }
 }
 
 enum L10n {
@@ -66,7 +73,6 @@ enum L10n {
         "Your email address": "E-posta adresin",
         "Sent": "Gönderildi",
         "Send reset link": "Sıfırlama bağlantısı gönder",
-        "This screen calls the backend service layer for password reset flow.": "Bu ekran şifre sıfırlama akışı için backend servis katmanını çağırır.",
         "Close": "Kapat",
         "Welcome, %@": "Merhaba, %@",
         "Premium": "Premium",
@@ -139,6 +145,7 @@ enum L10n {
         "Last watered: %@": "Son sulama: %@",
         "Next watering": "Sonraki sulama",
         "No notes yet.": "Henüz not yok.",
+        "No watering recorded yet.": "Henüz sulama kaydı yok.",
         "Selected day": "Seçilen gün",
         "Care calendar": "Bakım takvimi",
         "See watering rhythm by day and catch overdue care early.": "Sulama ritmini gün gün gör ve geciken bakımı erkenden yakala.",
@@ -251,12 +258,37 @@ enum L10n {
         "Bedroom": "Yatak Odası",
         "Office": "Çalışma Odası",
         "Monthly": "Aylık",
-        "Yearly": "Yıllık"
+        "Yearly": "Yıllık",
+        "Reset password": "Şifreyi sıfırla",
+        "New password": "Yeni şifre",
+        "Confirm new password": "Yeni şifreyi onayla",
+        "Passwords do not match.": "Şifreler eşleşmiyor.",
+        "Password must be at least 6 characters.": "Şifre en az 6 karakter olmalıdır.",
+        "Your password has been reset. You can now log in with your new password.": "Şifreniz sıfırlandı. Yeni şifrenizle giriş yapabilirsiniz.",
+        "This reset link is invalid or has already been used.": "Bu sıfırlama bağlantısı geçersiz veya daha önce kullanılmış.",
+        "This reset link has expired. Please request a new one.": "Bu sıfırlama bağlantısının süresi dolmuş. Lütfen yeni bir tane isteyin."
     ]
 }
 
 extension String {
     var localized: String {
         L10n.text(self)
+    }
+}
+
+extension Date {
+    func appFormatted(dateStyle: DateFormatter.Style = .medium, timeStyle: DateFormatter.Style = .short) -> String {
+        let f = DateFormatter()
+        f.locale = AppLanguage.current.locale
+        f.dateStyle = dateStyle
+        f.timeStyle = timeStyle
+        return f.string(from: self)
+    }
+
+    func appFormattedWeekday() -> String {
+        let f = DateFormatter()
+        f.locale = AppLanguage.current.locale
+        f.dateFormat = "EEE"
+        return f.string(from: self)
     }
 }

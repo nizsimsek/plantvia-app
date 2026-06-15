@@ -12,6 +12,7 @@ struct User: Identifiable, Codable, Equatable {
     var nickname: String
     var email: String
     var plan: String?
+    var language: String?
 }
 
 struct Plant: Identifiable, Codable, Equatable {
@@ -195,6 +196,25 @@ struct AIAnalysisAnswer: Codable {
     let suggestions: [String]
     let confidenceLevel: String
     let warning: String
+    let remaining: Int?
+}
+
+struct AIUsageStatus: Codable {
+    let used: Int
+    let remaining: Int
+    let limit: Int
+}
+
+struct PagedResponse<T: Codable>: Codable {
+    let items: [T]
+    let pagination: PaginationMeta
+}
+
+struct PaginationMeta: Codable {
+    let total: Int
+    let limit: Int
+    let offset: Int
+    let hasMore: Bool
 }
 
 struct AuthSession: Codable {

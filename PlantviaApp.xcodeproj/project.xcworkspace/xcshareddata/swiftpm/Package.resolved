@@ -1,5 +1,5 @@
 {
-  "originHash" : "01170e92d720559af00ef07367af74afaa0a065600a0181db17b9e4bd04b2c4d",
+  "originHash" : "537f703f18096b65c0414e3932534d9c9152357ea6b60dfc683bfa00cbc85d3f",
   "pins" : [
     {
       "identity" : "purchases-ios-spm",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "3bbaa4a88d74c863ee5bc4295b2fc628323eff0d",
         "version" : "5.75.0"
+      }
+    },
+    {
+      "identity" : "sentry-cocoa",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/getsentry/sentry-cocoa",
+      "state" : {
+        "revision" : "2c420d31d0c31b525fa9e7c552ef0fc9d924befc",
+        "version" : "9.17.1"
       }
     },
     {

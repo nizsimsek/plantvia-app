@@ -57,7 +57,14 @@ struct PremiumView: View {
                     PrimaryButton(primaryButtonTitle, icon: "crown.fill", isLoading: subscriptionStore.status.isLoading) {
                         Task { await buySelectedPlan() }
                     }
-                    
+
+                    if let opt = selectedOption, opt.hasTrial, let days = opt.trialDays {
+                        Text(L10n.format("After %d days, %@ will be charged. Cancel anytime.", days, opt.localizedPrice))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+
                     Button("Restore purchases".localized) {
                         Task { await restorePurchases() }
                     }
@@ -90,19 +97,33 @@ struct PremiumView: View {
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
             
-            Text("More plants, more analysis, and an ad-free care experience.".localized)
-                .font(.subheadline)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+            if anyPlanHasTrial {
+                Text("Try free, then enjoy unlimited plants, AI, and an ad-free experience.".localized)
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("More plants, more analysis, and an ad-free care experience.".localized)
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.secondary)
+            }
         }
         .frame(maxWidth: .infinity)
     }
     
+    private var selectedOption: RevenueCatPlanOption? { option(for: selectedPlan) }
+
     private var primaryButtonTitle: String {
-        if let option = option(for: selectedPlan) {
-            return L10n.format("Continue with %@", option.localizedPrice)
+        guard let option = selectedOption else { return "Go Premium".localized }
+        if option.hasTrial, let days = option.trialDays {
+            return L10n.format("Start %d-day free trial", days)
         }
-        return "Go Premium".localized
+        return L10n.format("Continue with %@", option.localizedPrice)
+    }
+
+    private var anyPlanHasTrial: Bool {
+        subscriptionStore.planOptions.contains { $0.hasTrial }
     }
     
     private func planCard(for plan: PremiumPlan) -> some View {
@@ -147,8 +168,16 @@ struct PremiumView: View {
                     Text(option?.localizedPrice ?? plan.price)
                         .font(.headline.bold())
                         .foregroundStyle(Color.plantviaPrimary)
-                    
-                    if let introductoryPrice = option?.localizedIntroductoryPrice {
+
+                    if let opt = option, opt.hasTrial, let days = opt.trialDays {
+                        Text(L10n.format("%d days free", days))
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Color.plantviaLeaf)
+                            .clipShape(Capsule())
+                    } else if let introductoryPrice = option?.localizedIntroductoryPrice {
                         Text(L10n.format("Intro: %@", introductoryPrice))
                             .font(.caption2)
                             .foregroundStyle(.secondary)

@@ -37,7 +37,7 @@ final class PlantStore: ObservableObject {
         selectedPlantHistory[plantId] = nil
     }
     
-    func loadPlants(token: String?, isOnline: Bool = true) async {
+    func loadPlants(token: String?, isOnline: Bool = true, showLoading: Bool = true) async {
         guard let token else {
             plants = []
             selectedPlantHistory = [:]
@@ -47,15 +47,15 @@ final class PlantStore: ObservableObject {
             status = .idle
             return
         }
-        
+
         guard isOnline else {
             plants = Self.loadCachedPlants()
             pendingWateringActions = Self.loadPendingWateringActions()
             status = .success
             return
         }
-        
-        status = .loading
+
+        if showLoading { status = .loading }
         do {
             plants = try await plantService.fetchPlants(token: token)
             mergePendingWateringActionsIntoPlants()
@@ -65,33 +65,9 @@ final class PlantStore: ObservableObject {
             status = .failure(error.localizedDescription)
         }
     }
-    
+
     func refreshPlants(token: String?, isOnline: Bool = true) async {
-        guard let token else {
-            plants = []
-            selectedPlantHistory = [:]
-            pendingWateringActions = []
-            savePlantsToCache()
-            savePendingWateringActions()
-            status = .idle
-            return
-        }
-        
-        guard isOnline else {
-            plants = Self.loadCachedPlants()
-            pendingWateringActions = Self.loadPendingWateringActions()
-            status = .success
-            return
-        }
-        
-        do {
-            plants = try await plantService.fetchPlants(token: token)
-            mergePendingWateringActionsIntoPlants()
-            savePlantsToCache()
-            status = .success
-        } catch {
-            status = .failure(error.localizedDescription)
-        }
+        await loadPlants(token: token, isOnline: isOnline, showLoading: false)
     }
     
     func addPlant(name: String, species: String, imageData: Data?, location: PlantLocation, wateringFrequencyDays: Int, reminderTime: Date, notes: String, token: String?, isOnline: Bool = true) async {

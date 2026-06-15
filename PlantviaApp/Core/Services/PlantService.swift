@@ -19,8 +19,8 @@ protocol PlantServiceProtocol {
 
 final class PlantService: PlantServiceProtocol {
     func fetchPlants(token: String) async throws -> [Plant] {
-        let envelope: APIEnvelope<[Plant]> = try await APIClient.shared.request("plants", token: token)
-        return envelope.data ?? []
+        let envelope: APIEnvelope<PagedResponse<Plant>> = try await APIClient.shared.request("plants?limit=100&offset=0", token: token)
+        return envelope.data?.items ?? []
     }
     
     func createPlant(_ request: PlantMutationRequest, token: String) async throws -> Plant {
@@ -47,8 +47,8 @@ final class PlantService: PlantServiceProtocol {
     }
     
     func fetchWateringHistory(plantId: Int, token: String) async throws -> [WateringLog] {
-        let envelope: APIEnvelope<[WateringLog]> = try await APIClient.shared.request("watering/logs/\(plantId)", token: token)
-        return envelope.data ?? []
+        let envelope: APIEnvelope<PagedResponse<WateringLog>> = try await APIClient.shared.request("watering/logs/\(plantId)?limit=50&offset=0", token: token)
+        return envelope.data?.items ?? []
     }
     
     func uploadPhoto(_ imageData: Data, token: String) async throws -> UploadedFile {

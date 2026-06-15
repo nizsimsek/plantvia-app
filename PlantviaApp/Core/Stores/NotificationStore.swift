@@ -12,29 +12,30 @@ import Combine
 @MainActor
 final class NotificationStore: ObservableObject {
     @Published var isDailyPremiumReminderEnabled: Bool {
-        didSet {
-            UserDefaults.standard.set(isDailyPremiumReminderEnabled, forKey: dailyPremiumReminderKey)
-        }
+        didSet { UserDefaults.standard.set(isDailyPremiumReminderEnabled, forKey: dailyPremiumReminderKey) }
+    }
+    @Published var isFreeWeeklyReminderEnabled: Bool {
+        didSet { UserDefaults.standard.set(isFreeWeeklyReminderEnabled, forKey: freeWeeklyReminderKey) }
     }
     @Published var reminderTime: Date {
-        didSet {
-            UserDefaults.standard.set(reminderTime, forKey: reminderTimeKey)
-        }
+        didSet { UserDefaults.standard.set(reminderTime, forKey: reminderTimeKey) }
     }
     @Published private(set) var permissionStatus: UNAuthorizationStatus = .notDetermined
     @Published private(set) var latestDeviceToken: String?
     @Published private(set) var status: LoadingState = .idle
-    
+
     private let notificationService: NotificationServiceProtocol
     private let dailyPremiumReminderKey = "isDailyPremiumReminderEnabled"
+    private let freeWeeklyReminderKey   = "isFreeWeeklyReminderEnabled"
     private let reminderTimeKey = "reminderTime"
     private let latestDeviceTokenKey = "latestDeviceToken"
-    
+
     init(notificationService: NotificationServiceProtocol) {
         self.notificationService = notificationService
-        self.isDailyPremiumReminderEnabled = UserDefaults.standard.bool(forKey: dailyPremiumReminderKey)
-        self.reminderTime = UserDefaults.standard.object(forKey: reminderTimeKey) as? Date ?? Self.defaultReminderTime
-        self.latestDeviceToken = UserDefaults.standard.string(forKey: latestDeviceTokenKey)
+        self.isDailyPremiumReminderEnabled = UserDefaults.standard.bool(forKey: "isDailyPremiumReminderEnabled")
+        self.isFreeWeeklyReminderEnabled   = UserDefaults.standard.bool(forKey: "isFreeWeeklyReminderEnabled")
+        self.reminderTime = UserDefaults.standard.object(forKey: "reminderTime") as? Date ?? Self.defaultReminderTime
+        self.latestDeviceToken = UserDefaults.standard.string(forKey: "latestDeviceToken")
     }
     
     func refreshPermissionStatus() async {
@@ -59,6 +60,7 @@ final class NotificationStore: ObservableObject {
             }
             
             isDailyPremiumReminderEnabled = isPremiumActive && preferences.premiumDailyEnabled
+            isFreeWeeklyReminderEnabled = preferences.freeWeeklyEnabled
             reminderTime = Self.reminderTimeFormatter.date(from: preferences.dailyReminderTime) ?? reminderTime
             await syncWithPremiumStatus(isPremiumActive: isPremiumActive)
             status = .success
@@ -83,16 +85,35 @@ final class NotificationStore: ObservableObject {
                 status = .failure("Notification permission is required for Premium reminders.".localized)
                 return
             }
-            try? await notificationService.saveNotificationPreferencesToBackend(isEnabled: true, time: reminderTime, authToken: authToken)
+            try? await notificationService.saveNotificationPreferencesToBackend(premiumDailyEnabled: true, freeWeeklyEnabled: nil, time: reminderTime, authToken: authToken)
             await notificationService.startRemoteNotificationRecording()
             await syncLatestDeviceTokenToBackend(authToken: authToken)
         } else {
             notificationService.cancelPremiumDailyReminder()
-            try? await notificationService.saveNotificationPreferencesToBackend(isEnabled: false, time: reminderTime, authToken: authToken)
+            try? await notificationService.saveNotificationPreferencesToBackend(premiumDailyEnabled: false, freeWeeklyEnabled: nil, time: reminderTime, authToken: authToken)
             status = .success
         }
     }
     
+    func setFreeWeeklyReminderEnabled(_ isEnabled: Bool, authToken: String? = nil) async {
+        isFreeWeeklyReminderEnabled = isEnabled
+        if isEnabled {
+            let didPlan = (try? await notificationService.planFreeWeeklyReminder()) ?? false
+            if !didPlan {
+                isFreeWeeklyReminderEnabled = false
+                status = .failure("Notification permission is required to enable weekly reminders.".localized)
+                return
+            }
+            try? await notificationService.saveNotificationPreferencesToBackend(premiumDailyEnabled: nil, freeWeeklyEnabled: true, time: reminderTime, authToken: authToken)
+            await notificationService.startRemoteNotificationRecording()
+            await syncLatestDeviceTokenToBackend(authToken: authToken)
+        } else {
+            notificationService.cancelFreeWeeklyReminder()
+            try? await notificationService.saveNotificationPreferencesToBackend(premiumDailyEnabled: nil, freeWeeklyEnabled: false, time: reminderTime, authToken: authToken)
+            status = .success
+        }
+    }
+
     func updateReminderTimeIfNeeded(isPremiumActive: Bool, authToken: String? = nil) async {
         guard isDailyPremiumReminderEnabled else { return }
         await setPremiumDailyReminderEnabled(true, isPremiumActive: isPremiumActive, authToken: authToken)

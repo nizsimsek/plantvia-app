@@ -72,23 +72,31 @@ struct PlantDetailView: View {
                         
                             Text("Watering history".localized).font(.headline)
                             PlantviaSurface {
-                                VStack(spacing: 14) {
-                                    ForEach(plantStore.selectedPlantHistory[activePlant.id] ?? activePlant.wateringHistory) { data in
-                                        HStack(alignment: .top, spacing: 12) {
-                                            Circle()
-                                                .fill(Color.plantviaPrimary)
-                                                .frame(width: 10, height: 10)
-                                                .padding(.top, 6)
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(data.wateredAt.formatted(date: .abbreviated, time: .shortened)).font(.subheadline.bold())
-                                                Text(data.note).font(.caption).foregroundStyle(.secondary)
-                                                if data.isPending {
-                                                    Label("Sync pending".localized, systemImage: "clock.arrow.circlepath")
-                                                        .font(.caption2.weight(.semibold))
-                                                        .foregroundStyle(Color.plantviaWarning)
+                                let history = plantStore.selectedPlantHistory[activePlant.id] ?? activePlant.wateringHistory
+                                if history.isEmpty {
+                                    Label("No watering recorded yet.".localized, systemImage: "drop.slash")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                } else {
+                                    VStack(spacing: 14) {
+                                        ForEach(history) { data in
+                                            HStack(alignment: .top, spacing: 12) {
+                                                Circle()
+                                                    .fill(Color.plantviaPrimary)
+                                                    .frame(width: 10, height: 10)
+                                                    .padding(.top, 6)
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text(data.wateredAt.appFormatted()).font(.subheadline.bold())
+                                                    Text(data.note).font(.caption).foregroundStyle(.secondary)
+                                                    if data.isPending {
+                                                        Label("Sync pending".localized, systemImage: "clock.arrow.circlepath")
+                                                            .font(.caption2.weight(.semibold))
+                                                            .foregroundStyle(Color.plantviaWarning)
+                                                    }
                                                 }
+                                                Spacer()
                                             }
-                                            Spacer()
                                         }
                                     }
                                 }
@@ -227,7 +235,7 @@ struct PlantDetailView: View {
                 Text(title)
                     .font(.caption.weight(.bold))
                     .foregroundStyle(.secondary)
-                Text(date.formatted(date: .long, time: .shortened))
+                Text(date.appFormatted(dateStyle: .long, timeStyle: .short))
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(2)
             }
@@ -290,35 +298,31 @@ struct PlantDetailView: View {
     }
     
     private func plantHeroImage(_ activePlant: Plant) -> some View {
-        Group {
-            if let imageUrl = activePlant.imageUrl, let url = URL(string: imageUrl, relativeTo: APIClient.shared.baseURL.deletingLastPathComponent()) {
-                AsyncImage(url: url.absoluteURL) { phase in
-                    switch phase {
-                        case .success(let image):
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [.plantviaForest, .plantviaPrimary.opacity(0.82), .plantviaMint.opacity(0.55)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .frame(maxWidth: .infinity, maxHeight: 270)
+            .overlay {
+                if let url = APIClient.shared.imageURL(forPath: activePlant.imageUrl) {
+                    AsyncImage(url: url) { phase in
+                        if case .success(let image) = phase {
                             image
                                 .resizable()
                                 .scaledToFill()
-                        default:
-                            Image(systemName: activePlant.imageName)
-                                .font(.system(size: 92))
-                                .foregroundStyle(.white)
+                        }
                     }
+                    .id(activePlant.imageUrl)
+                } else {
+                    Image(systemName: activePlant.imageName)
+                        .font(.system(size: 92))
+                        .foregroundStyle(.white)
                 }
-            } else {
-                Image(systemName: activePlant.imageName)
-                    .font(.system(size: 92))
-                    .foregroundStyle(.white)
             }
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 270)
-        .background(
-            LinearGradient(
-                colors: [.plantviaForest, .plantviaPrimary.opacity(0.82), .plantviaMint.opacity(0.55)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .clipped()
+            .clipped()
     }
 }

@@ -9,8 +9,8 @@ import SwiftUI
 
 struct LoginView: View {
     @EnvironmentObject private var authStore: AuthStore
-    @State private var email = "nizamettin@plantvia.app"
-    @State private var password = "123456"
+    @State private var email = ""
+    @State private var password = ""
     @State private var errorMessage: String?
     @State private var isRegisterPresented = false
     @State private var isForgotPasswordPresented = false
@@ -52,6 +52,7 @@ struct LoginView: View {
                     }
                     .padding(24)
                 }
+                .scrollDismissesKeyboard(.immediately)
             }
             .sheet(isPresented: $isRegisterPresented) { RegisterView() }
             .sheet(isPresented: $isForgotPasswordPresented) { ForgotPasswordView() }

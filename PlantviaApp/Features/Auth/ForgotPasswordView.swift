@@ -10,6 +10,7 @@ import SwiftUI
 struct ForgotPasswordView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var container: AppContainer
+    @EnvironmentObject private var authStore: AuthStore
     @State private var email = ""
     @State private var isResetLinkSent = false
     @State private var isSubmitting = false
@@ -43,17 +44,17 @@ struct ForgotPasswordView: View {
                             PrimaryButton(isResetLinkSent ? "Sent".localized : "Send reset link".localized, icon: "paperplane.fill", isLoading: isSubmitting) {
                                 Task { await sendReset() }
                             }
-                            
-                            Text("This screen calls the backend service layer for password reset flow.".localized)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
                         }
                     }
                 }
                 .padding()
             }
+            .dismissKeyboardOnTap()
             .navigationTitle("Forgot password".localized)
             .toolbar { Button("Close".localized) { dismiss() } }
+            .onChange(of: authStore.pendingResetToken) { _, token in
+                if token != nil { dismiss() }
+            }
         }
     }
     

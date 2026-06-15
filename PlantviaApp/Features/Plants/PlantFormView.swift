@@ -63,6 +63,7 @@ struct PlantFormView: View {
                 }
                 .padding()
             }
+            .scrollDismissesKeyboard(.immediately)
         }
         .navigationTitle((plantToEdit == nil ? "Add plant" : "Edit plant").localized)
         .onChange(of: selectedPhoto) { _, selectedItem in

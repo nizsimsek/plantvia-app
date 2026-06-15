@@ -15,7 +15,9 @@ struct MainTabView: View {
     @EnvironmentObject private var notificationStore: NotificationStore
     @EnvironmentObject private var connectivityStore: ConnectivityStore
     @EnvironmentObject private var container: AppContainer
-    @State private var selectedTab = 0
+    @AppStorage("selectedTab") private var selectedTab: Int = 0
+    @State private var showFirstPlantSheet = false
+    private let firstPlantPromptKey = "hasSeenFirstPlantPrompt"
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -61,6 +63,9 @@ struct MainTabView: View {
                 await refreshServerState(isInitialLoad: false)
             }
         }
+        .sheet(isPresented: $showFirstPlantSheet) {
+            FirstPlantPromptView()
+        }
     }
     
     private func refreshServerState(isInitialLoad: Bool) async {
@@ -76,6 +81,10 @@ struct MainTabView: View {
         
         if isInitialLoad {
             await plantStore.loadPlants(token: authStore.authToken, isOnline: connectivityStore.isOnline)
+            if plantStore.plants.isEmpty, !UserDefaults.standard.bool(forKey: firstPlantPromptKey) {
+                UserDefaults.standard.set(true, forKey: firstPlantPromptKey)
+                showFirstPlantSheet = true
+            }
         } else {
             await plantStore.refreshPlants(token: authStore.authToken, isOnline: connectivityStore.isOnline)
         }

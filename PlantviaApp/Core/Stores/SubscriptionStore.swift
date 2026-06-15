@@ -53,8 +53,8 @@ final class SubscriptionStore: ObservableObject {
             status = .failure(error.localizedDescription)
         }
         
-        isPremiumActive = backendPremiumIsActive
-        
+        isPremiumActive = backendPremiumIsActive || isPremiumActive
+
         return backendUser
     }
     

@@ -10,16 +10,23 @@ import UserNotifications
 
 final class MockAuthService: AuthServiceProtocol {
     func login(email: String, password: String) async throws -> AuthSession {
-        AuthSession(user: User(id: 1, nickname: "Preview", email: email, plan: "premium"), accessToken: "preview-token", refreshToken: "preview-refresh")
+        AuthSession(user: User(id: 1, nickname: "Preview", email: email, plan: "premium", language: "tr"), accessToken: "preview-token", refreshToken: "preview-refresh")
     }
-    
+
     func register(nickname: String, email: String, password: String) async throws -> AuthSession {
-        AuthSession(user: User(id: 1, nickname: nickname, email: email, plan: "free"), accessToken: "preview-token", refreshToken: "preview-refresh")
+        AuthSession(user: User(id: 1, nickname: nickname, email: email, plan: "free", language: "tr"), accessToken: "preview-token", refreshToken: "preview-refresh")
     }
     
+    func refresh(refreshToken: String) async throws -> AuthSession {
+        AuthSession(user: User(id: 1, nickname: "Preview", email: "preview@plantvia.app", plan: "premium", language: "tr"), accessToken: "preview-token", refreshToken: "preview-refresh")
+    }
     func forgotPassword(email: String) async throws {}
+    func resetPassword(token: String, password: String) async throws {}
     func updateProfile(nickname: String, token: String) async throws -> User {
-        User(id: 1, nickname: nickname, email: "preview@plantvia.app", plan: "premium")
+        User(id: 1, nickname: nickname, email: "preview@plantvia.app", plan: "premium", language: "tr")
+    }
+    func updateSettings(language: String, token: String) async throws -> User {
+        User(id: 1, nickname: "Preview", email: "preview@plantvia.app", plan: "premium", language: language)
     }
     func logout(refreshToken: String) async throws {}
 }
@@ -30,8 +37,13 @@ final class MockAIAnalysisService: AIAnalysisServiceProtocol {
             answer: "Mock AI answer: The plant looks generally healthy; check the top layer of soil before watering.",
             suggestions: ["Check soil moisture", "Use bright indirect light"],
             confidenceLevel: "Medium",
-            warning: "This answer is for testing only."
+            warning: "This answer is for testing only.",
+            remaining: 47
         )
+    }
+
+    func fetchAiStatus(token: String?) async throws -> AIUsageStatus {
+        AIUsageStatus(used: 3, remaining: 47, limit: 50)
     }
 }
 
@@ -79,8 +91,8 @@ final class MockRevenueCatService: RevenueCatServiceProtocol {
     
     func fetchPlanOptions() async throws -> [RevenueCatPlanOption] {
         [
-            RevenueCatPlanOption(plan: .monthly, productId: "plantvia_premium_monthly", packageId: "monthly", localizedPrice: "$1.99", localizedIntroductoryPrice: nil),
-            RevenueCatPlanOption(plan: .yearly, productId: "plantvia_premium_yearly", packageId: "yearly", localizedPrice: "$19.99", localizedIntroductoryPrice: nil)
+            RevenueCatPlanOption(plan: .monthly, productId: "plantvia_premium_monthly", packageId: "monthly", localizedPrice: "₺79,99", localizedIntroductoryPrice: nil, hasTrial: false, trialDays: nil),
+            RevenueCatPlanOption(plan: .yearly, productId: "plantvia_premium_yearly", packageId: "yearly", localizedPrice: "₺599,99", localizedIntroductoryPrice: "Free", hasTrial: true, trialDays: 7)
         ]
     }
     
@@ -98,11 +110,13 @@ final class MockNotificationService: NotificationServiceProtocol {
     func readPermissionStatus() async -> UNAuthorizationStatus { .authorized }
     func planPremiumDailyReminder(time: DateComponents) async throws -> Bool { true }
     func cancelPremiumDailyReminder() {}
+    func planFreeWeeklyReminder() async throws -> Bool { true }
+    func cancelFreeWeeklyReminder() {}
     func startRemoteNotificationRecording() async {}
     func saveDeviceTokenToBE(_ token: String, authToken: String?) async throws {}
-    func saveNotificationPreferencesToBackend(isEnabled: Bool, time: Date, authToken: String?) async throws {}
+    func saveNotificationPreferencesToBackend(premiumDailyEnabled: Bool?, freeWeeklyEnabled: Bool?, time: Date, authToken: String?) async throws {}
     func fetchNotificationPreferences(authToken: String?) async throws -> NotificationPreferenceResponse? {
-        NotificationPreferenceResponse(premiumDailyEnabled: true, dailyReminderTime: "09:00", timezone: "Europe/Istanbul")
+        NotificationPreferenceResponse(premiumDailyEnabled: true, freeWeeklyEnabled: false, dailyReminderTime: "09:00", timezone: "Europe/Istanbul")
     }
 }
 

@@ -21,7 +21,8 @@ struct AppEnvironment {
     let revenueCatYearlyProductId: String
     let revenueCatTestMonthlyProductId: String
     let revenueCatTestYearlyProductId: String
-    
+    let sentryDsn: String?
+
     var usesRevenueCatTestStore: Bool {
         revenueCatAPIKey.hasPrefix("test_")
     }
@@ -81,6 +82,7 @@ struct AppEnvironment {
             forKey: "PLANTVIA_REVENUECAT_TEST_YEARLY_PRODUCT_ID",
             bundle: bundle
         )
+        sentryDsn = bundle.object(forInfoDictionaryKey: "PLANTVIA_SENTRY_DSN") as? String
     }
     
     private static func stringValue(forKey key: String, bundle: Bundle) -> String {

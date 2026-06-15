@@ -153,6 +153,14 @@ extension View {
     func plantviaField() -> some View {
         modifier(PlantviaTextFieldStyle())
     }
+
+    func dismissKeyboardOnTap() -> some View {
+        simultaneousGesture(TapGesture().onEnded {
+#if canImport(UIKit)
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+#endif
+        })
+    }
 }
 
 extension PlantStatus {

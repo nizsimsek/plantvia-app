@@ -4,8 +4,6 @@
 <dict>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-2409216557858282~9757231822</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>Plantvia uses your permission to show more relevant ads for free users. Premium users do not see ads.</string>
 	<key>PLANTVIA_ADMOB_BANNER_AD_UNIT_ID</key>
 	<string>ca-app-pub-2409216557858282/5817986810</string>
 	<key>PLANTVIA_ADMOB_DEBUG_BANNER_AD_UNIT_ID</key>
@@ -13,21 +11,25 @@
 	<key>PLANTVIA_ADMOB_INTERSTITIAL_AD_UNIT_ID</key>
 	<string>ca-app-pub-3940256099942544/4411468910</string>
 	<key>PLANTVIA_API_BASE_URL</key>
-	<string>https://plantvia-api.nizsimsek.dev/api</string>
+	<string>https://plantvia-api.nizsimsek.dev/api/v1</string>
 	<key>PLANTVIA_REVENUECAT_API_KEY</key>
 	<string>appl_KeDfvzRhRHWahnMgLjDiHvKAWTS</string>
 	<key>PLANTVIA_REVENUECAT_ENTITLEMENT_ID</key>
 	<string>Plantvia Pro</string>
 	<key>PLANTVIA_REVENUECAT_MONTHLY_PRODUCT_ID</key>
 	<string>plantvia_premium_monthly</string>
-	<key>PLANTVIA_REVENUECAT_TEST_MONTHLY_PRODUCT_ID</key>
-	<string>monthly</string>
 	<key>PLANTVIA_REVENUECAT_OFFERING_ID</key>
 	<string>default</string>
-	<key>PLANTVIA_REVENUECAT_YEARLY_PRODUCT_ID</key>
-	<string>plantvia_premium_yearly</string>
+	<key>PLANTVIA_REVENUECAT_TEST_MONTHLY_PRODUCT_ID</key>
+	<string>monthly</string>
 	<key>PLANTVIA_REVENUECAT_TEST_YEARLY_PRODUCT_ID</key>
 	<string>yearly</string>
+	<key>PLANTVIA_REVENUECAT_YEARLY_PRODUCT_ID</key>
+	<string>plantvia_premium_yearly</string>
+	<key>PLANTVIA_SENTRY_DSN</key>
+	<string>https://ec6af7e010c6f20e71ff027b76a75c64@o4511559406190592.ingest.de.sentry.io/4511559433257040</string>
+	<key>POSTHOG_API_KEY</key>
+	<string></string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>
@@ -231,8 +233,17 @@
 			<string>3qcr597p9d.skadnetwork</string>
 		</dict>
 	</array>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>plantvia</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.nizsimsek.PlantviaApp</string>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

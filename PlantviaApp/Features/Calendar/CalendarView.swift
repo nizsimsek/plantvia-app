@@ -104,7 +104,7 @@ struct CalendarView: View {
             withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) { selectedDay = day }
         } label: {
             VStack(spacing: 8) {
-                Text(day.formatted(.dateTime.weekday(.abbreviated)))
+                Text(day.appFormattedWeekday())
                     .font(.caption.weight(.bold))
                 Text(day.formatted(.dateTime.day()))
                     .font(.title3.bold())

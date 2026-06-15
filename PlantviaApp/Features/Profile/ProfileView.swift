@@ -47,6 +47,7 @@ struct ProfileView: View {
                 }
                 .padding()
             }
+            .scrollDismissesKeyboard(.immediately)
         }
         .navigationTitle("Profile".localized)
         .onAppear { nickname = authStore.activeUser?.nickname ?? nickname }
@@ -155,6 +156,9 @@ struct ProfileView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .onChange(of: appLanguage) { _, newLanguage in
+                    Task { await authStore.updateSettings(language: newLanguage) }
+                }
             }
         }
     }
@@ -162,38 +166,51 @@ struct ProfileView: View {
     private var notificationsCard: some View {
         PlantviaSurface {
             VStack(alignment: .leading, spacing: 12) {
-                cardTitle("Premium notifications".localized, icon: "bell.badge.fill")
-                Toggle("Daily care notification".localized, isOn: Binding(
-                    get: { notificationStore.isDailyPremiumReminderEnabled },
-                    set: { isEnabled in
-                        Task {
-                            await notificationStore.setPremiumDailyReminderEnabled(
-                                isEnabled,
-                                isPremiumActive: subscriptionStore.isPremiumActive,
-                                authToken: authStore.authToken
-                            )
+                if subscriptionStore.isPremiumActive {
+                    cardTitle("Premium notifications".localized, icon: "bell.badge.fill")
+                    Toggle("Daily care notification".localized, isOn: Binding(
+                        get: { notificationStore.isDailyPremiumReminderEnabled },
+                        set: { isEnabled in
+                            Task {
+                                await notificationStore.setPremiumDailyReminderEnabled(
+                                    isEnabled,
+                                    isPremiumActive: true,
+                                    authToken: authStore.authToken
+                                )
+                            }
                         }
-                    }
-                ))
-                
-                DatePicker("Notification time".localized, selection: Binding(
-                    get: { notificationStore.reminderTime },
-                    set: { selectedTime in
-                        notificationStore.reminderTime = selectedTime
-                        Task {
-                            await notificationStore.updateReminderTimeIfNeeded(isPremiumActive: subscriptionStore.isPremiumActive, authToken: authStore.authToken)
+                    ))
+
+                    DatePicker("Notification time".localized, selection: Binding(
+                        get: { notificationStore.reminderTime },
+                        set: { selectedTime in
+                            notificationStore.reminderTime = selectedTime
+                            Task {
+                                await notificationStore.updateReminderTimeIfNeeded(isPremiumActive: true, authToken: authStore.authToken)
+                            }
                         }
-                    }
-                ), displayedComponents: .hourAndMinute)
-                .disabled(!notificationStore.isDailyPremiumReminderEnabled)
-                
-                if !subscriptionStore.isPremiumActive {
+                    ), displayedComponents: .hourAndMinute)
+                    .disabled(!notificationStore.isDailyPremiumReminderEnabled)
+                } else {
+                    cardTitle("Notifications".localized, icon: "bell.fill")
+                    Toggle("Weekly watering reminder".localized, isOn: Binding(
+                        get: { notificationStore.isFreeWeeklyReminderEnabled },
+                        set: { isEnabled in
+                            Task {
+                                await notificationStore.setFreeWeeklyReminderEnabled(isEnabled, authToken: authStore.authToken)
+                            }
+                        }
+                    ))
+                    Text("Get a weekly reminder every Sunday at 10:00 to check on your plants.".localized)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
                     NavigationLink(destination: PremiumView()) {
-                        settingRow(title: "Enable notifications with Premium".localized, value: nil, icon: "lock.fill", tint: .plantviaWarning)
+                        settingRow(title: "Get daily notifications with Premium".localized, value: nil, icon: "crown.fill", tint: .plantviaWarning)
                     }
                     .buttonStyle(PressableScaleStyle())
                 }
-                
+
                 if let errorMessage = notificationStore.status.errorMessage {
                     Text(errorMessage)
                         .font(.footnote)

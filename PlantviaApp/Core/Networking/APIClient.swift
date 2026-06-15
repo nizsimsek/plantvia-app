@@ -10,11 +10,14 @@ import Foundation
 final class APIClient {
     static let shared = APIClient()
     private init() {}
-    
+
+    static var onTokenRefreshNeeded: (() async throws -> String)?
+
     var baseURL = AppEnvironment.shared.apiBaseURL
     
     func request<T: Decodable>(_ endpoint: String, method: String = "GET", body: Encodable? = nil, token: String? = nil) async throws -> T {
-        let url = makeURL(endpoint)
+        print("BASEURL: ", baseURL)
+        let url = try makeURL(endpoint)
         var urlRequest = URLRequest(url: url)
         configureNoCacheHeaders(&urlRequest)
         urlRequest.httpMethod = method
@@ -23,28 +26,42 @@ final class APIClient {
         if let token {
             urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        
+
         if let body {
             urlRequest.httpBody = try JSONEncoder().encode(AnyEncodable(body))
         }
         
         let (data, response) = try await URLSession.shared.data(for: urlRequest)
-        guard let httpResponse = response as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode else {
-            let errorEnvelope = try? JSONDecoder.plantvia.decode(APIErrorEnvelope.self, from: data)
-            let statusCode = (response as? HTTPURLResponse)?.statusCode
-            Self.publishSessionExpiredIfNeeded(statusCode: statusCode, token: token)
-            throw APIError.server(Self.userFriendlyErrorMessage(statusCode: statusCode, serverMessage: errorEnvelope?.message, token: token))
+        if let httpResponse = response as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode {
+            return try JSONDecoder.plantvia.decode(T.self, from: data)
         }
-        return try JSONDecoder.plantvia.decode(T.self, from: data)
+
+        let statusCode = (response as? HTTPURLResponse)?.statusCode
+
+        // ARCH-003: Silent refresh on 401 — skip for auth endpoints to prevent loops
+        if statusCode == 401, token != nil, !endpoint.hasPrefix("auth/"),
+           let refreshHandler = Self.onTokenRefreshNeeded,
+           let newToken = try? await refreshHandler() {
+            var retryRequest = urlRequest
+            retryRequest.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
+            let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
+            if let retryHTTP = retryResponse as? HTTPURLResponse, 200..<300 ~= retryHTTP.statusCode {
+                return try JSONDecoder.plantvia.decode(T.self, from: retryData)
+            }
+        }
+
+        let errorEnvelope = try? JSONDecoder.plantvia.decode(APIErrorEnvelope.self, from: data)
+        Self.publishSessionExpiredIfNeeded(statusCode: statusCode, token: token)
+        throw APIError.server(Self.userFriendlyErrorMessage(statusCode: statusCode, serverMessage: errorEnvelope?.message, token: token))
     }
-    
+
     func uploadImage<T: Decodable>(_ endpoint: String, imageData: Data, fileName: String = "plant.jpg", token: String? = nil) async throws -> T {
         try await uploadMultipartImage(endpoint, imageData: imageData, fields: [:], fileName: fileName, token: token, fallbackMessage: "Photo could not be uploaded.".localized)
     }
     
     func uploadMultipartImage<T: Decodable>(_ endpoint: String, imageData: Data, fields: [String: String], fileName: String = "plant.jpg", token: String? = nil, fallbackMessage: String? = nil) async throws -> T {
         let boundary = "Boundary-\(UUID().uuidString)"
-        let url = makeURL(endpoint)
+        let url = try makeURL(endpoint)
         var request = URLRequest(url: url)
         configureNoCacheHeaders(&request)
         request.httpMethod = "POST"
@@ -53,7 +70,7 @@ final class APIClient {
         if let token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        
+
         var body = Data()
         for (name, value) in fields {
             body.append("--\(boundary)\r\n")
@@ -70,19 +87,45 @@ final class APIClient {
         request.httpBody = body
         
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode else {
-            let errorEnvelope = try? JSONDecoder.plantvia.decode(APIErrorEnvelope.self, from: data)
-            let statusCode = (response as? HTTPURLResponse)?.statusCode
-            Self.publishSessionExpiredIfNeeded(statusCode: statusCode, token: token)
-            throw APIError.server(Self.userFriendlyErrorMessage(statusCode: statusCode, serverMessage: errorEnvelope?.message, token: token, fallback: fallbackMessage ?? "Photo could not be uploaded.".localized))
+        if let httpResponse = response as? HTTPURLResponse, 200..<300 ~= httpResponse.statusCode {
+            return try JSONDecoder.plantvia.decode(T.self, from: data)
         }
-        return try JSONDecoder.plantvia.decode(T.self, from: data)
+
+        let statusCode = (response as? HTTPURLResponse)?.statusCode
+
+        // ARCH-003: Silent refresh on 401
+        if statusCode == 401, token != nil, !endpoint.hasPrefix("auth/"),
+           let refreshHandler = Self.onTokenRefreshNeeded,
+           let newToken = try? await refreshHandler() {
+            var retryRequest = request
+            retryRequest.setValue("Bearer \(newToken)", forHTTPHeaderField: "Authorization")
+            let (retryData, retryResponse) = try await URLSession.shared.data(for: retryRequest)
+            if let retryHTTP = retryResponse as? HTTPURLResponse, 200..<300 ~= retryHTTP.statusCode {
+                return try JSONDecoder.plantvia.decode(T.self, from: retryData)
+            }
+        }
+
+        let errorEnvelope = try? JSONDecoder.plantvia.decode(APIErrorEnvelope.self, from: data)
+        Self.publishSessionExpiredIfNeeded(statusCode: statusCode, token: token)
+        throw APIError.server(Self.userFriendlyErrorMessage(statusCode: statusCode, serverMessage: errorEnvelope?.message, token: token, fallback: fallbackMessage ?? "Photo could not be uploaded.".localized))
     }
     
-    private func makeURL(_ endpoint: String) -> URL {
+    func imageURL(forPath path: String?) -> URL? {
+        guard let path, !path.isEmpty,
+              let scheme = baseURL.scheme,
+              let host = baseURL.host else { return nil }
+        let portPart = baseURL.port.map { ":\($0)" } ?? ""
+        return URL(string: "\(scheme)://\(host)\(portPart)\(path)")
+    }
+
+    private func makeURL(_ endpoint: String) throws -> URL {
         let base = baseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let path = endpoint.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        return URL(string: "\(base)/\(path)")!
+        let urlString = "\(base)/\(path)"
+        guard let url = URL(string: urlString) else {
+            throw APIError.invalidURL(urlString)
+        }
+        return url
     }
     
     private func configureNoCacheHeaders(_ request: inout URLRequest) {
@@ -130,7 +173,7 @@ private extension Data {
 }
 
 extension JSONDecoder {
-    static var plantvia: JSONDecoder {
+    static let plantvia: JSONDecoder = {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
@@ -147,7 +190,7 @@ extension JSONDecoder {
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Date format is not supported: \(value)")
         }
         return decoder
-    }
+    }()
 }
 
 extension ISO8601DateFormatter {
@@ -187,10 +230,12 @@ struct AnyEncodable: Encodable {
 
 enum APIError: LocalizedError {
     case server(String)
-    
+    case invalidURL(String)
+
     var errorDescription: String? {
         switch self {
             case .server(let message): return message
+            case .invalidURL(let url): return "Invalid URL: \(url)"
         }
     }
 }

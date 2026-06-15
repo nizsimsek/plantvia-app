@@ -28,6 +28,8 @@ struct AIAssistantView: View {
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var selectedImageData: Data?
     @FocusState private var isInputFocused: Bool
+    @State private var dailyRemaining: Int? = nil
+    @State private var dailyLimit: Int = 50
     
     var body: some View {
         Group {
@@ -59,6 +61,11 @@ struct AIAssistantView: View {
         .task {
             if connectivityStore.isOnline, let updatedUser = await subscriptionStore.refreshSubscriptionStatus(token: authStore.authToken) {
                 authStore.updateActiveUser(updatedUser)
+            }
+            if connectivityStore.isOnline, subscriptionStore.isPremiumActive,
+               let status = try? await container.aiService.fetchAiStatus(token: authStore.authToken) {
+                dailyRemaining = status.remaining
+                dailyLimit = status.limit
             }
         }
         .onAppear {
@@ -123,6 +130,9 @@ struct AIAssistantView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+                if let remaining = dailyRemaining {
+                    AIQuotaBadge(remaining: remaining, limit: dailyLimit)
+                }
             }
         }
     }
@@ -239,6 +249,7 @@ struct AIAssistantView: View {
         do {
             let answer = try await container.aiService.performPlantAnalysis(question: trimmedQuestion, plantId: plantId, imageData: selectedImageData, token: authStore.authToken)
             messages.append(ChatMessage(text: formattedAnswer(answer), fromTheUser: false))
+            if let r = answer.remaining { dailyRemaining = r }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -277,6 +288,33 @@ struct OfflineAILockView: View {
             systemImage: "wifi.slash",
             description: Text("Photo analysis and care answers are available when you are back online.".localized)
         )
+    }
+}
+
+private struct AIQuotaBadge: View {
+    let remaining: Int
+    let limit: Int
+
+    private var color: Color {
+        let ratio = Double(remaining) / Double(max(limit, 1))
+        if ratio > 0.4 { return .green }
+        if ratio > 0.2 { return .orange }
+        return .red
+    }
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("\(remaining)")
+                .font(.title3.bold())
+                .foregroundStyle(color)
+            Text("left today".localized)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(color.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 

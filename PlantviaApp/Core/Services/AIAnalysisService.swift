@@ -10,6 +10,7 @@ import SwiftUI
 
 protocol AIAnalysisServiceProtocol {
     func performPlantAnalysis(question: String, plantId: Int?, imageData: Data?, token: String?) async throws -> AIAnalysisAnswer
+    func fetchAiStatus(token: String?) async throws -> AIUsageStatus
 }
 
 final class AIAnalysisService: AIAnalysisServiceProtocol {
@@ -36,6 +37,13 @@ final class AIAnalysisService: AIAnalysisServiceProtocol {
         
         guard let answer = envelope.data else { throw APIError.server(envelope.message) }
         return answer
+    }
+
+    func fetchAiStatus(token: String?) async throws -> AIUsageStatus {
+        guard let token else { throw AIError.clearMessage("AI status requires an active session.".localized) }
+        let envelope: APIEnvelope<AIUsageStatus> = try await APIClient.shared.request("ai/status", token: token)
+        guard let status = envelope.data else { throw APIError.server(envelope.message) }
+        return status
     }
 }
 
